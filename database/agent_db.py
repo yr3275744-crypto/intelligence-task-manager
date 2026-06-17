@@ -126,6 +126,26 @@ class AgentDB:
         else:
             return None
 
+    def increment_failed(self, id:int) -> str | None:
+        """docstring"""
+        connection = DBConnection(database="Intelligence_db").get_connection()
+        cursor = connection.cursor(dictionary = True)
+
+        cursor.execute("""UPDATE agents 
+                       SET failed_missions = failed_missions + 1 
+                       WHERE id = %s""", (id,))
+
+        connection.commit()
+        changes_count = cursor.rowcount
+
+        cursor.close()
+        connection.close()
+
+        if changes_count:
+            return f"The agent {id} faild to do a task."
+        else:
+            return None
+
 
 
 if __name__ == "__main__":
