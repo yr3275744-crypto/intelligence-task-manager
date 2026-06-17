@@ -54,7 +54,17 @@ class AgentDB:
         connection.close()
         return row if row else None
 
-    def update_agent(self, id:int, data:AgentBody) -> str:
+    def update_agent(self, id:int, data_dict:dict, cursor) -> bool:
+        """docstring"""
+        key_set_string = ", ".join([key + " = %s" for key in data_dict])
+        values_and_id_list = list(data_dict.values()) + [id]
+        update_strig = "UPDATE agents SET " + key_set_string + " WHERE id = %s"
+        
+        cursor.execute(update_strig, values_and_id_list)
+        
+        return True
+
+    def update_agent_handle(self, id:int, data:AgentBody) -> str:
         """docstring"""
         if data.agent_rank:
             agent_utiles.check_is_valid_rank(data)
@@ -66,27 +76,47 @@ class AgentDB:
         if not data_dict:
             raise agent_utiles.EmptyInput
 
-        key_set_string = ", ".join([key + " = %s" for key in data_dict])
-        values_and_id_list = list(data_dict.values()) + [id]
-        update_strig = "UPDATE agents SET " + key_set_string + " WHERE id = %s"
+        try:
+            self.update_agent(id, data_dict, cursor)
+            connection.commit()
+            return f"The agent {id} is updated successfully"
         
-        cursor.execute(update_strig, values_and_id_list)
+        finally:
+            cursor.close()
+            connection.close()
+
+    def deactivate_agent(self, id:int) -> str | None:
+        """docstring"""
+        connection = DBConnection(database="Intelligence_db").get_connection()
+        cursor = connection.cursor(dictionary = True)
+
+        cursor.execute("""UPDATE agents 
+                       SET is_active = FALSE 
+                       WHERE id = %s""", (id,))
+        
         connection.commit()
+        changes_count = cursor.rowcount
 
         cursor.close()
-        connection.close() 
-        return f"The agent {id} is updated successfully"
+        connection.close()
+
+        if changes_count:
+            return f"The agent {id} deactivated successfully"
+        else:
+            return None
 
 
 if __name__ == "__main__":
     agent_db = AgentDB()
     
-    an_agent = AgentBody(specialty = "oop", agent_rank = "Senior")
+    an_agent = AgentBody(specialty = "fastapi", agent_rank = "Senior")
 
     # print(agent_db.create_agent(an_agent))
 
     # print(agent_db.get_all_agents())
 
-    # print(agent_db.get_agent_by_id(1))
+    print(agent_db.get_agent_by_id(1))
 
-    # print(agent_db.update_agent(1, an_agent))
+    # print(agent_db.update_agent_handle(1, an_agent))
+
+    print(agent_db.deactivate_agent(11))
