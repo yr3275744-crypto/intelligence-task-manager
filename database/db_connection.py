@@ -81,3 +81,4 @@ if __name__ == "__main__":
     db_connection.get_connection()
     connection.close()
     print(db_connection.create_tables())
+    print(db_connection.database)
