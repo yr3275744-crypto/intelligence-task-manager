@@ -106,6 +106,28 @@ class AgentDB:
             return None
 
 
+    def increment_completed(self, id:int) -> str | None:
+        """docstring"""
+        connection = DBConnection(database="Intelligence_db").get_connection()
+        cursor = connection.cursor(dictionary = True)
+
+        cursor.execute("""UPDATE agents 
+                       SET completed_missions = completed_missions + 1 
+                       WHERE id = %s""", (id,))
+
+        connection.commit()
+        changes_count = cursor.rowcount
+
+        cursor.close()
+        connection.close()
+
+        if changes_count:
+            return f"The agent {id} complite a task successfully"
+        else:
+            return None
+
+
+
 if __name__ == "__main__":
     agent_db = AgentDB()
     
@@ -119,4 +141,6 @@ if __name__ == "__main__":
 
     # print(agent_db.update_agent_handle(1, an_agent))
 
-    print(agent_db.deactivate_agent(11))
+    # print(agent_db.deactivate_agent(11))
+
+    # print(agent_db.increment_completed(55))
