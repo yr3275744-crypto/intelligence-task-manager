@@ -13,22 +13,34 @@ class AgentDB:
 
     def create_agent(self, data:AgentBody) -> dict:
         """docstring"""
-        agent_utiles.check_full_detiles(data)
-        agent_utiles.check_is_valid_rank(data)
+        try:
+            agent_utiles.check_full_detiles(data)
+            agent_utiles.check_is_valid_rank(data)
 
-        values_tuple = (data.name, data.specialty, data.agent_rank)
-        connection = DBConnection(database="Intelligence_db").get_connection()
-        cursor = connection.cursor(dictionary = True)
+            values_tuple = (data.name, data.specialty, data.agent_rank)
+            connection = DBConnection(database="Intelligence_db").get_connection()
+            cursor = connection.cursor(dictionary = True)
 
-        cursor.execute("INSERT INTO agents (name, specialty, agent_rank) VALUES (%s, %s, %s)", values_tuple)
-        connection.commit()
-        id = cursor.lastrowid
-        cursor.execute("SELECT * FROM agents WHERE id = %s", (id,))
-        row = cursor.fetchone()
+            cursor.execute("INSERT INTO agents (name, specialty, agent_rank) VALUES (%s, %s, %s)", values_tuple)
+            connection.commit()
+            id = cursor.lastrowid
+            cursor.execute("SELECT * FROM agents WHERE id = %s", (id,))
+            row = cursor.fetchone()
 
-        cursor.close()
-        connection.close()
-        return row
+            return row
+        
+        except agent_utiles.InvalidName:
+            return "Invalid name."
+        
+        except agent_utiles.InvalidSpecialty:
+            return "Invalid specialty"
+        
+        except agent_utiles.InvalidRank:
+            return "Invalid rank."
+        
+        finally:
+            cursor.close()
+            connection.close()
 
     def get_all_agents(self) -> list:
         """docstring"""
@@ -66,26 +78,32 @@ class AgentDB:
 
     def update_agent_handle(self, id:int, data:AgentBody) -> str:
         """docstring"""
-        if data.agent_rank:
-            agent_utiles.check_is_valid_rank(data)
-        
-        connection = DBConnection(database="Intelligence_db").get_connection()
-        cursor = connection.cursor(dictionary = True)
-
-        data_dict = data.model_dump(exclude_none = True)
-        if not data_dict:
-            raise agent_utiles.EmptyInput
-
         try:
+            if data.agent_rank:
+                agent_utiles.check_is_valid_rank(data)
+            
+            connection = DBConnection(database="Intelligence_db").get_connection()
+            cursor = connection.cursor(dictionary = True)
+
+            data_dict = data.model_dump(exclude_none = True)
+            if not data_dict:
+                raise agent_utiles.EmptyInput
+
             self.update_agent(id, data_dict, cursor)
             connection.commit()
             return f"The agent {id} is updated successfully"
+            
+        except agent_utiles.InvalidRank:
+            return "Invalid rank."
         
+        except agent_utiles.EmptyInput:
+            return "Empty input."
+
         finally:
             cursor.close()
             connection.close()
 
-    def deactivate_agent(self, id:int) -> str | None:
+    def deactivate_agent(self, id:int) -> str:
         """docstring"""
         connection = DBConnection(database="Intelligence_db").get_connection()
         cursor = connection.cursor(dictionary = True)
@@ -103,10 +121,10 @@ class AgentDB:
         if changes_count:
             return f"The agent {id} deactivated successfully"
         else:
-            return None
+            return f"The deactivated is faild."
 
 
-    def increment_completed(self, id:int) -> str | None:
+    def increment_completed(self, id:int) -> str:
         """docstring"""
         connection = DBConnection(database="Intelligence_db").get_connection()
         cursor = connection.cursor(dictionary = True)
@@ -124,9 +142,9 @@ class AgentDB:
         if changes_count:
             return f"The agent {id} complite a task successfully"
         else:
-            return None
+            return f"The complite task is faild."
 
-    def increment_failed(self, id:int) -> str | None:
+    def increment_failed(self, id:int) -> str:
         """docstring"""
         connection = DBConnection(database="Intelligence_db").get_connection()
         cursor = connection.cursor(dictionary = True)
@@ -144,20 +162,24 @@ class AgentDB:
         if changes_count:
             return f"The agent {id} faild to do a task."
         else:
-            return None
+            return f"The increment failed action is faild."
+
+    def get_agent_performance(id:int) -> dict:
+        """docstring"""
+
 
 
 
 if __name__ == "__main__":
     agent_db = AgentDB()
     
-    an_agent = AgentBody(specialty = "fastapi", agent_rank = "Senior")
+    an_agent = AgentBody(specialty = "fastapi all", agent_rank = "Senior")
 
     # print(agent_db.create_agent(an_agent))
 
     # print(agent_db.get_all_agents())
 
-    print(agent_db.get_agent_by_id(1))
+    # print(agent_db.get_agent_by_id(1))
 
     # print(agent_db.update_agent_handle(1, an_agent))
 
