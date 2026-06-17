@@ -1,15 +1,9 @@
 #TODO: add validation to size of the input value
 # add validation function for create agent
 
-from db_connection import DBConnection
-from pydantic import BaseModel
-import pydantic
-
-class AgentBody(BaseModel):
-    name: str | None = None
-    specialty: str | None = None
-    agent_rank:str | None = None
-    
+from database.db_connection import DBConnection
+import agent_utiles
+from agent_utiles import AgentBody
 
 class AgentDB:
     """Nust get name, specialty and agent_rank in the body.
@@ -19,6 +13,8 @@ class AgentDB:
 
     def create_agent(self, data:AgentBody) -> dict:
         """docstring"""
+        agent_utiles.check_full_detiles(data)
+        agent_utiles.check_is_valid_rank(data)
 
         values_tuple = (data.name, data.specialty, data.agent_rank)
         connection = DBConnection(database="Intelligence_db").get_connection()
@@ -46,12 +42,51 @@ class AgentDB:
         connection.close()
         return rows        
 
+    def get_agent_by_id(self, id:int) -> dict | None:
+        """docstring"""
+        connection = DBConnection(database="Intelligence_db").get_connection()
+        cursor = connection.cursor(dictionary = True)
+
+        cursor.execute("SELECT * FROM agents WHERE id = %s", (id,))
+        row = cursor.fetchone()
+        
+        cursor.close()
+        connection.close()
+        return row if row else None
+
+    def update_agent(self, id:int, data:AgentBody) -> str:
+        """docstring"""
+        if data.agent_rank:
+            agent_utiles.check_is_valid_rank(data)
+        
+        connection = DBConnection(database="Intelligence_db").get_connection()
+        cursor = connection.cursor(dictionary = True)
+
+        data_dict = data.model_dump(exclude_none = True)
+        if not data_dict:
+            raise agent_utiles.EmptyInput
+
+        key_set_string = ", ".join([key + " = %s" for key in data_dict])
+        values_and_id_list = list(data_dict.values()) + [id]
+        update_strig = "UPDATE agents SET " + key_set_string + " WHERE id = %s"
+        
+        cursor.execute(update_strig, values_and_id_list)
+        connection.commit()
+
+        cursor.close()
+        connection.close() 
+        return f"The agent {id} is updated successfully"
+
 
 if __name__ == "__main__":
     agent_db = AgentDB()
     
-    an_agent = AgentBody(name = "dod", specialty = "yoga", agent_rank = "Junior")
+    an_agent = AgentBody(specialty = "oop", agent_rank = "Senior")
 
-    print(agent_db.create_agent(an_agent))
+    # print(agent_db.create_agent(an_agent))
 
-    print(agent_db.get_all_agents())
+    # print(agent_db.get_all_agents())
+
+    # print(agent_db.get_agent_by_id(1))
+
+    # print(agent_db.update_agent(1, an_agent))
