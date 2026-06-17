@@ -164,9 +164,27 @@ class AgentDB:
         else:
             return f"The increment failed action is faild."
 
-    def get_agent_performance(id:int) -> dict:
+    def get_agent_performance(self, id:int) -> dict:
         """docstring"""
+        try:
+            connection = DBConnection(database="Intelligence_db").get_connection()
+            cursor = connection.cursor(dictionary = True)
 
+            cursor.execute("""select completed_missions, failed_missions 
+                        FROM agents
+                        WHERE id = %s""", (id,))
+            
+            row = cursor.fetchone()
+            if not row:
+                return "The agent is not found"
+            else:
+                row["total"] = row["completed_missions"] + row["failed_missions"]
+                row["success_rate"] = row["completed_missions"] / row["total"] *100
+
+                return row
+        finally:
+            cursor.close()
+            connection.close()
 
 
 
@@ -186,3 +204,5 @@ if __name__ == "__main__":
     # print(agent_db.deactivate_agent(11))
 
     # print(agent_db.increment_completed(55))
+
+    print(agent_db.get_agent_performance(1))

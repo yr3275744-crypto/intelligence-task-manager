@@ -191,6 +191,6 @@ play the db files:
 
 ```py .\database\db_connection.py```
 
-```py .\database\agent_db.py```
+```py -m database.agent_db```
 
-```py .\database\mission_db.py```
+```py -m database.mission_db```
