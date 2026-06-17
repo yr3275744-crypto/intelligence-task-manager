@@ -1,4 +1,5 @@
 #TODO: add validation to size of the input value
+# add validation function for create agent
 
 from db_connection import DBConnection
 from pydantic import BaseModel
@@ -33,11 +34,24 @@ class AgentDB:
         connection.close()
         return row
 
+    def get_all_agents(self) -> list:
+        """docstring"""
+        connection = DBConnection(database="Intelligence_db").get_connection()
+        cursor = connection.cursor(dictionary = True)
+
+        cursor.execute("SELECT * FROM agents")
+
+        rows = cursor.fetchall()
+        cursor.close()
+        connection.close()
+        return rows        
 
 
 if __name__ == "__main__":
     agent_db = AgentDB()
     
-    an_agent = AgentBody(name = "bob", specialty = "yoga", agent_rank = "Senior")
+    an_agent = AgentBody(name = "dod", specialty = "yoga", agent_rank = "Junior")
 
     print(agent_db.create_agent(an_agent))
+
+    print(agent_db.get_all_agents())
