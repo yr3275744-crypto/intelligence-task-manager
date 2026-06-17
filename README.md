@@ -58,9 +58,9 @@ intelligence-task-manager/
 
 - assigned agent id: INT, DEFAULT NULL
 
-## ConnectionDB, AgentDB and MissionDB classes
+## DBConnection, AgentDB and MissionDB classes
 
-### ConnectionDB
+### DBConnection
 
 Create connection with the database and create the tables.
 
