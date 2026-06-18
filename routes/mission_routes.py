@@ -21,3 +21,12 @@ def create_mission(body:mission_utiles.MissionCreateBody):
     
     except connector.Error:
         raise HTTPException(status_code=500, detail=f"Something get wronng with the connection")
+    
+@router.get("/missions")
+def get_all_missions():
+    """docstring"""
+    try:
+        return mission_db.get_all_missions()
+    
+    except connector.Error:
+        raise HTTPException(status_code=500, detail=f"Something get wronng with the connection")

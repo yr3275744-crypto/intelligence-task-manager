@@ -8,6 +8,20 @@ class MissionDB:
     def __init__(self):
         pass
 
+    def calculate_risk_level(self, risk_number:int) -> str:
+        """docstring"""
+        if risk_number <= 9:
+            risk_level = "LOW"
+        elif risk_number <= 17:
+            risk_level = "MEDIUM"
+        elif risk_number <= 24:
+            risk_level = "HIGH"
+        elif risk_number >= 25:
+            risk_level = "CRITICAL"
+        
+        return risk_level
+
+
     def create_mission(self, data:MissionCreateBody) -> dict:
         """docstring"""
         connection = None
@@ -15,14 +29,7 @@ class MissionDB:
             mission_utiles.check_difficulty_and_importance(data)
 
             risk_number = data.difficulty * 2 + data.importance
-            if risk_number <= 9:
-                risk_level = "LOW"
-            elif risk_number <= 17:
-                risk_level = "MEDIUM"
-            elif risk_number <= 24:
-                risk_level = "HIGH"
-            elif risk_number >= 25:
-                risk_level = "CRITICAL"
+            risk_level = self.calculate_risk_level(risk_number)
 
             values_tuple = (data.title, data.description, data.location, data.difficulty, data.importance, risk_level)
             connection = DBConnection(database="Intelligence_db").get_connection()
@@ -43,6 +50,23 @@ class MissionDB:
         
         except connector.Error as e:
             raise e
+        
+        finally:
+            if connection:
+                connection.close()
+
+    def get_all_missions(self):
+        """docstring"""
+        connection = None
+        try:
+            connection = DBConnection(database="Intelligence_db").get_connection()
+            cursor = connection.cursor(dictionary = True)
+
+            cursor.execute("SELECT * FROM missions")
+
+            rows = cursor.fetchall()
+            cursor.close()
+            return rows
         
         finally:
             if connection:
