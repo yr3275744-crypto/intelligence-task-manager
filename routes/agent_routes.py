@@ -26,8 +26,8 @@ def create_agent(body:AgentBody) -> dict:
     except agent_utiles.InvalidRank as e:
         raise HTTPException(status_code=400, detail= "Invalid runk.")
     
-    except connector.Error as e:
-        raise HTTPException(status_code=500, detail=f"Something get wronng with the connection: {e}")
+    except connector.Error:
+        raise HTTPException(status_code=500, detail=f"Something get wronng with the connection")
 
 @router.get("/agents")
 def get_all_of_agents() -> list:
@@ -47,8 +47,8 @@ def get_agent_by_id(id:int):
         else:
             raise HTTPException(status_code=404, detail= "The agent did not found")
     
-    except connector.Error as e:
-        raise HTTPException(status_code=500, detail=f"Something get wronng with the connection: {e}")
+    except connector.Error:
+        raise HTTPException(status_code=500, detail=f"Something get wronng with the connection")
     
 @router.put("/agents/{id}")
 def update_agent(id:int, body:AgentBody):
@@ -66,8 +66,8 @@ def update_agent(id:int, body:AgentBody):
     except agent_utiles.EmptyInput as e:
         raise HTTPException(status_code=400, detail= "Empty body.")
     
-    except connector.Error as e:
-        raise HTTPException(status_code=500, detail=f"Something get wronng with the connection: {e}")
+    except connector.Error:
+        raise HTTPException(status_code=500, detail=f"Something get wronng with the connection")
 
 @router.put("/agents/{id}/deactivate")
 def deactivate_agent(id:int):
@@ -78,8 +78,8 @@ def deactivate_agent(id:int):
     except agent_utiles.AgentNotFound:
         raise HTTPException(status_code=404, detail= "The agent did not found")
     
-    except connector.Error as e:
-        raise HTTPException(status_code=500, detail=f"Something get wronng with the connection: {e}")
+    except connector.Error:
+        raise HTTPException(status_code=500, detail=f"Something get wronng with the connection")
     
 @router.get("/agents/{id}/performance")
 def get_agent_performance(id:int):
@@ -90,5 +90,5 @@ def get_agent_performance(id:int):
     except agent_utiles.AgentNotFound:
         raise HTTPException(status_code=404, detail= "The agent did not found")
     
-    except connector.Error as e:
-        raise HTTPException(status_code=500, detail=f"Something get wronng with the connection: {e}")
+    except connector.Error:
+        raise HTTPException(status_code=500, detail=f"Something get wronng with the connection")
