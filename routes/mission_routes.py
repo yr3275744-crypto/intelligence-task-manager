@@ -75,4 +75,15 @@ def assingn_mission(id:int, agent_id:int):
     except Exception:
         raise HTTPException(status_code=500, detail=f"Something get wronng.")
     
+@router.put("/missions/{id}/start")
+def start_mission(id:int):
+    """docstring"""
+    try:
+        return mission_db.update_mission_status(id, "IN_PROGRESS")
+    
+    except mission_utiles.MissionNotExists:
+        raise HTTPException(status_code=404, detail= "The mission did not found")
+    
+    except connector.Error:
+        raise HTTPException(status_code=500, detail=f"Something get wronng with the connection")
     

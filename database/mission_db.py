@@ -127,6 +127,26 @@ class MissionDB:
             if connection:
                 connection.close()
 
+    def update_mission_status(self, mission_id:int, status:str):
+        """docstring"""
+        connection = None
+        try:
+            connection = DBConnection(database="Intelligence_db").get_connection()
+            cursor = connection.cursor(dictionary = True)
+            mission = mission_utiles.get_mission_if_exists_else_None(mission_id, cursor)
+            if not mission:
+                raise mission_utiles.MissionNotExists
+
+            cursor.execute("UPDATE missions SET status = %s WHERE id = %s", (status, mission_id))
+
+            connection.commit()
+            cursor.close()
+            return "Status updated successfully"
+        
+        finally:
+            if connection:
+                connection.close()
+
 
 if __name__ == "__main__":
     m = MissionDB()
