@@ -55,7 +55,7 @@ class MissionDB:
             if connection:
                 connection.close()
 
-    def get_all_missions(self):
+    def get_all_missions(self) -> list:
         """docstring"""
         connection = None
         try:
@@ -67,6 +67,40 @@ class MissionDB:
             rows = cursor.fetchall()
             cursor.close()
             return rows
+        
+        finally:
+            if connection:
+                connection.close()
+
+    def get_mission_by_id(self, id:int) -> dict | None:
+        """docstring"""
+        connection = None
+        try:
+            connection = DBConnection(database="Intelligence_db").get_connection()
+            cursor = connection.cursor(dictionary = True)
+
+            cursor.execute("SELECT * FROM missions WHERE id = %s", (id,))
+            row = cursor.fetchone()
+            
+            cursor.close()
+            return row if row else None
+        
+        finally:
+            if connection:
+                connection.close()
+
+    def assign_mission(self, m_id:int, a_id:int) -> str:
+        """docstring"""
+        connection = None
+        try:
+            connection = DBConnection(database="Intelligence_db").get_connection()
+            cursor = connection.cursor(dictionary = True)
+
+            cursor.execute("UPDATE missions SET assigned_agent_id = %s WHERE id = %s", (a_id, m_id))
+            
+            connection.commit()
+
+            return "Success"
         
         finally:
             if connection:

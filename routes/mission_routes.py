@@ -30,3 +30,16 @@ def get_all_missions():
     
     except connector.Error:
         raise HTTPException(status_code=500, detail=f"Something get wronng with the connection")
+    
+@router.get("/missions/{id}")
+def get_mission_by_id(id:int):
+    """docstring"""
+    try:
+        mission = mission_db.get_mission_by_id(id)
+        if mission:
+            return mission
+        else:
+            raise HTTPException(status_code=404, detail= "The mission did not found")
+    
+    except connector.Error:
+        raise HTTPException(status_code=500, detail=f"Something get wronng with the connection")
