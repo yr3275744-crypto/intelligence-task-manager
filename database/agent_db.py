@@ -1,6 +1,7 @@
 #TODO: add validation to size of the input value
 # add validation function for create agent
 
+from mysql import connector
 from database.db_connection import DBConnection
 import agent_utiles
 from agent_utiles import AgentBody
@@ -13,6 +14,7 @@ class AgentDB:
 
     def create_agent(self, data:AgentBody) -> dict:
         """docstring"""
+        connection = None
         try:
             agent_utiles.check_full_detiles(data)
             agent_utiles.check_is_valid_rank(data)
@@ -26,45 +28,61 @@ class AgentDB:
             id = cursor.lastrowid
             cursor.execute("SELECT * FROM agents WHERE id = %s", (id,))
             row = cursor.fetchone()
-
+            cursor.close()
             return row
         
-        except agent_utiles.InvalidName:
-            return "Invalid name."
+        except agent_utiles.InvalidName as e:
+            raise e
         
-        except agent_utiles.InvalidSpecialty:
-            return "Invalid specialty"
+        except agent_utiles.InvalidSpecialty as e:
+            raise e
         
-        except agent_utiles.InvalidRank:
-            return "Invalid rank."
+        except agent_utiles.NoRank as e:
+            raise e
+
+        except agent_utiles.InvalidRank as e:
+            raise e
         
+        except connector.Error as e:
+            raise e
+
         finally:
-            cursor.close()
-            connection.close()
+            if connection:
+                connection.close()
 
     def get_all_agents(self) -> list:
         """docstring"""
-        connection = DBConnection(database="Intelligence_db").get_connection()
-        cursor = connection.cursor(dictionary = True)
+        connection = None
+        try:
+            connection = DBConnection(database="Intelligence_db").get_connection()
+            cursor = connection.cursor(dictionary = True)
 
-        cursor.execute("SELECT * FROM agents")
+            cursor.execute("SELECT * FROM agents")
 
-        rows = cursor.fetchall()
-        cursor.close()
-        connection.close()
-        return rows        
+            rows = cursor.fetchall()
+            cursor.close()
+            return rows
+        
+        finally:
+            if connection:
+                connection.close()
 
     def get_agent_by_id(self, id:int) -> dict | None:
         """docstring"""
-        connection = DBConnection(database="Intelligence_db").get_connection()
-        cursor = connection.cursor(dictionary = True)
+        connection = None
+        try:
+            connection = DBConnection(database="Intelligence_db").get_connection()
+            cursor = connection.cursor(dictionary = True)
 
-        cursor.execute("SELECT * FROM agents WHERE id = %s", (id,))
-        row = cursor.fetchone()
+            cursor.execute("SELECT * FROM agents WHERE id = %s", (id,))
+            row = cursor.fetchone()
+            
+            cursor.close()
+            return row if row else None
         
-        cursor.close()
-        connection.close()
-        return row if row else None
+        finally:
+            if connection:
+                connection.close()
 
     def update_agent(self, id:int, data_dict:dict, cursor) -> bool:
         """docstring"""
@@ -78,6 +96,7 @@ class AgentDB:
 
     def update_agent_handle(self, id:int, data:AgentBody) -> str:
         """docstring"""
+        connection = None
         try:
             if data.agent_rank:
                 agent_utiles.check_is_valid_rank(data)
@@ -89,40 +108,45 @@ class AgentDB:
             if not data_dict:
                 raise agent_utiles.EmptyInput
 
+            is_exists = agent_utiles.check_if_exists(id, cursor)
+            if not is_exists:
+                return False    
+            
             self.update_agent(id, data_dict, cursor)
             connection.commit()
-            return f"The agent {id} is updated successfully"
-            
-        except agent_utiles.InvalidRank:
-            return "Invalid rank."
-        
-        except agent_utiles.EmptyInput:
-            return "Empty input."
-
-        finally:
             cursor.close()
-            connection.close()
+            return True
+            
+        except agent_utiles.InvalidRank as e:
+            raise e
+        
+        finally:
+            if connection:
+                connection.close()
 
     def deactivate_agent(self, id:int) -> str:
         """docstring"""
-        connection = DBConnection(database="Intelligence_db").get_connection()
-        cursor = connection.cursor(dictionary = True)
+        connection = None
+        try:
+            connection = DBConnection(database="Intelligence_db").get_connection()
+            cursor = connection.cursor(dictionary = True)
 
-        cursor.execute("""UPDATE agents 
-                       SET is_active = FALSE 
-                       WHERE id = %s""", (id,))
-        
-        connection.commit()
-        changes_count = cursor.rowcount
+            is_exists = agent_utiles.check_if_exists(id, cursor)
+            if not is_exists:
+                raise agent_utiles.AgentNotFound
 
-        cursor.close()
-        connection.close()
+            cursor.execute("""UPDATE agents 
+                        SET is_active = FALSE 
+                        WHERE id = %s""", (id,))
+            
+            connection.commit()
 
-        if changes_count:
+            cursor.close()
             return f"The agent {id} deactivated successfully"
-        else:
-            return f"The deactivated is faild."
-
+        
+        finally:
+            if connection:
+                connection.close()
 
     def increment_completed(self, id:int) -> str:
         """docstring"""
@@ -142,7 +166,7 @@ class AgentDB:
         if changes_count:
             return f"The agent {id} complite a task successfully"
         else:
-            return f"The complite task is faild."
+            raise agent_utiles.AgentNotFound
 
     def increment_failed(self, id:int) -> str:
         """docstring"""
@@ -162,7 +186,7 @@ class AgentDB:
         if changes_count:
             return f"The agent {id} faild to do a task."
         else:
-            return f"The increment failed action is faild."
+            raise agent_utiles.AgentNotFound
 
     def get_agent_performance(self, id:int) -> dict:
         """docstring"""
@@ -170,29 +194,48 @@ class AgentDB:
             connection = DBConnection(database="Intelligence_db").get_connection()
             cursor = connection.cursor(dictionary = True)
 
+            is_exists = agent_utiles.check_if_exists(id, cursor)
+            if not is_exists:
+                raise agent_utiles.AgentNotFound
+            
             cursor.execute("""select completed_missions, failed_missions 
                         FROM agents
                         WHERE id = %s""", (id,))
             
             row = cursor.fetchone()
-            if not row:
-                return "The agent is not found"
+
+            row["total"] = row["completed_missions"] + row["failed_missions"]
+            
+            if row["total"] == 0:
+                row["success_rate"] = 100
             else:
-                row["total"] = row["completed_missions"] + row["failed_missions"]
                 row["success_rate"] = row["completed_missions"] / row["total"] *100
 
-                return row
+            return row
+        
         finally:
             cursor.close()
             connection.close()
 
+    # def agents_active_count(self) -> list:
+    #     """docstring"""
+    #     connection = DBConnection(database="Intelligence_db").get_connection()
+    #     cursor = connection.cursor(dictionary = True)
+
+    #     cursor.execute("SELECT COUNT(*) as active agents FROM agents WHERE is_active = TRUE")
+
+    #     rows = cursor.fetchall()
+    #     cursor.close()
+    #     connection.close()
+    #     return rows      
 
 
 if __name__ == "__main__":
     agent_db = AgentDB()
     
-    an_agent = AgentBody(specialty = "fastapi all", agent_rank = "Senior")
+    # an_agent = AgentBody(specialty = "fastapi all", agent_rank = "Senior")
 
+    print(agent_db.increment_failed(6))
     # print(agent_db.create_agent(an_agent))
 
     # print(agent_db.get_all_agents())
@@ -205,4 +248,4 @@ if __name__ == "__main__":
 
     # print(agent_db.increment_completed(55))
 
-    print(agent_db.get_agent_performance(1))
+    # print(agent_db.agents_active_count())
