@@ -122,6 +122,7 @@ def complete_mission(id:int):
         agent_id = mission["assigned_agent_id"]
         agent_db.increment_completed(agent_id, cursor)
         cursor.close()
+        connection.commit()
         return change_status_dun
     
     except connector.Error:
