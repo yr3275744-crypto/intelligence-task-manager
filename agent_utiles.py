@@ -20,6 +20,10 @@ class EmptyInput(Exception):
 class AgentNotFound(Exception):
     pass
 
+class AgentDoesNotActive(Exception):
+    pass
+
+
 class AgentBody(BaseModel):
     name: str | None = None
     specialty: str | None = None

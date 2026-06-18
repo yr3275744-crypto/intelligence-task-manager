@@ -92,3 +92,4 @@ def get_agent_performance(id:int):
     
     except connector.Error:
         raise HTTPException(status_code=500, detail=f"Something get wronng with the connection")
+    

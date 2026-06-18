@@ -95,13 +95,39 @@ class MissionDB:
         try:
             connection = DBConnection(database="Intelligence_db").get_connection()
             cursor = connection.cursor(dictionary = True)
+            mission_utiles.check_for_assign(m_id, a_id, cursor)
 
             cursor.execute("UPDATE missions SET assigned_agent_id = %s WHERE id = %s", (a_id, m_id))
             
             connection.commit()
 
-            return "Success"
+            return "The mission assign was successful."
         
         finally:
             if connection:
                 connection.close()
+
+    def get_open_missions_by_agent(self, id:int):
+        """docstring"""
+        connection = None
+        try:
+            connection = DBConnection(database="Intelligence_db").get_connection()
+            cursor = connection.cursor(dictionary = True)
+            
+            cursor.execute("""SELECT COUNT(*) as count
+                           FROM missions 
+                           WHERE (status = 'ASSIGNED' OR STATUS = 'IN_PROGRESS') AND assigned_agent_id = %s""", (id,))
+
+            row = cursor.fetchone()
+            cursor.close()
+
+            return row["count"]
+        
+        finally:
+            if connection:
+                connection.close()
+
+
+if __name__ == "__main__":
+    m = MissionDB()
+    print(m.get_open_missions_by_agent(3))

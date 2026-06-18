@@ -148,25 +148,19 @@ class AgentDB:
             if connection:
                 connection.close()
 
-    def increment_completed(self, id:int) -> str:
+    def increment_completed(self, id:int, cursor) -> str | None:
         """docstring"""
-        connection = DBConnection(database="Intelligence_db").get_connection()
-        cursor = connection.cursor(dictionary = True)
 
         cursor.execute("""UPDATE agents 
                        SET completed_missions = completed_missions + 1 
                        WHERE id = %s""", (id,))
 
-        connection.commit()
         changes_count = cursor.rowcount
-
-        cursor.close()
-        connection.close()
 
         if changes_count:
             return f"The agent {id} complite a task successfully"
         else:
-            raise agent_utiles.AgentNotFound
+            return None
 
     def increment_failed(self, id:int) -> str:
         """docstring"""
