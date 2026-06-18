@@ -130,7 +130,6 @@ class MissionDB:
     def update_mission_status(self, mission_id:int, status:str, cursor):
         """docstring"""
         cursor.execute("UPDATE missions SET status = %s WHERE id = %s", (status, mission_id))
-        cursor.close()
         return "Status updated successfully"
         
 

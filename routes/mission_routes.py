@@ -92,6 +92,7 @@ def start_mission(id:int):
 
         message = mission_db.update_mission_status(id, "IN_PROGRESS", cursor)
         connection.commit()
+        cursor.close()
         return message
     
     except connector.Error:
@@ -102,19 +103,30 @@ def start_mission(id:int):
                 connection.close()
 
 
-# @router.put("/missions/{id}/complete")
-# def complete_mission(id:int, body:mission_utiles.MissionUpdateStatusBody):
-#     """docstring"""
-#     connection = None
-#     try:
-#         connection = DBConnection(database="Intelligence_db").get_connection()
-#         cursor = connection.cursor(dictionary = True)
-#         if body.status != "ASSIGNED":
-#             raise HTTPException(status_code= 400, detail= "Invalid status")
-
-#         mission = mission_utiles.get_mission_if_exists_else_None(id, cursor)
-#         if not mission:
-#             raise HTTPException(status_code=404, detail= "The mission did not found")
+@router.put("/missions/{id}/complete")
+def complete_mission(id:int):
+    """docstring"""
+    connection = None
+    try:
+        connection = DBConnection(database="Intelligence_db").get_connection()
+        cursor = connection.cursor(dictionary = True)
         
+        mission = mission_utiles.get_mission_if_exists_else_None(id, cursor)
+        if not mission:
+            raise HTTPException(status_code=404, detail= "The mission did not found")
+        
+        if mission.get("status") != "IN_PROGRESS":
+            raise HTTPException(status_code=400, detail=" The mission does not in progras.")
 
-#         return mission_db.update_mission_status(id, "COMPLETED")
+        change_status_dun = mission_db.update_mission_status(id, "COMPLETED", cursor)
+        agent_id = mission["assigned_agent_id"]
+        agent_db.increment_completed(agent_id, cursor)
+        cursor.close()
+        return change_status_dun
+    
+    except connector.Error:
+        raise HTTPException(status_code=500, detail=f"Something get wronng with the connection")
+    
+    finally:
+            if connection:
+                connection.close()
