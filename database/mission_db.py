@@ -1,7 +1,7 @@
 from mysql import connector
 from database.db_connection import DBConnection
 import mission_utiles
-from mission_utiles import MissionCreateBody, MissionUpdateBody
+from mission_utiles import MissionCreateBody
 
 class MissionDB:
     """docsrting"""
@@ -97,10 +97,10 @@ class MissionDB:
             cursor = connection.cursor(dictionary = True)
             mission_utiles.check_for_assign(m_id, a_id, cursor)
 
-            cursor.execute("UPDATE missions SET assigned_agent_id = %s WHERE id = %s", (a_id, m_id))
-            
-            connection.commit()
+            cursor.execute("UPDATE missions SET status = 'ASSIGNED', assigned_agent_id = %s WHERE id = %s", (a_id, m_id))
 
+            connection.commit()
+            cursor.close()
             return "The mission assign was successful."
         
         finally:
@@ -127,25 +127,12 @@ class MissionDB:
             if connection:
                 connection.close()
 
-    def update_mission_status(self, mission_id:int, status:str):
+    def update_mission_status(self, mission_id:int, status:str, cursor):
         """docstring"""
-        connection = None
-        try:
-            connection = DBConnection(database="Intelligence_db").get_connection()
-            cursor = connection.cursor(dictionary = True)
-            mission = mission_utiles.get_mission_if_exists_else_None(mission_id, cursor)
-            if not mission:
-                raise mission_utiles.MissionNotExists
-
-            cursor.execute("UPDATE missions SET status = %s WHERE id = %s", (status, mission_id))
-
-            connection.commit()
-            cursor.close()
-            return "Status updated successfully"
+        cursor.execute("UPDATE missions SET status = %s WHERE id = %s", (status, mission_id))
+        cursor.close()
+        return "Status updated successfully"
         
-        finally:
-            if connection:
-                connection.close()
 
 
 if __name__ == "__main__":

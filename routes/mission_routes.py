@@ -4,7 +4,7 @@ import database.mission_db
 import database.agent_db
 import mission_utiles
 import agent_utiles
-
+from database.db_connection import DBConnection
 router = APIRouter()
 
 mission_db = database.mission_db.MissionDB()
@@ -78,12 +78,43 @@ def assingn_mission(id:int, agent_id:int):
 @router.put("/missions/{id}/start")
 def start_mission(id:int):
     """docstring"""
+    connection = None
     try:
-        return mission_db.update_mission_status(id, "IN_PROGRESS")
-    
-    except mission_utiles.MissionNotExists:
-        raise HTTPException(status_code=404, detail= "The mission did not found")
+        connection = DBConnection(database="Intelligence_db").get_connection()
+        cursor = connection.cursor(dictionary = True)
+        
+        mission = mission_utiles.get_mission_if_exists_else_None(id, cursor)
+        if not mission:
+            raise HTTPException(status_code=404, detail= "The mission did not found")
+        
+        if mission.get("status") != "ASSIGNED":
+            raise HTTPException(status_code=400, detail=" The mission does not assigend.")
+
+        message = mission_db.update_mission_status(id, "IN_PROGRESS", cursor)
+        connection.commit()
+        return message
     
     except connector.Error:
         raise HTTPException(status_code=500, detail=f"Something get wronng with the connection")
     
+    finally:
+            if connection:
+                connection.close()
+
+
+# @router.put("/missions/{id}/complete")
+# def complete_mission(id:int, body:mission_utiles.MissionUpdateStatusBody):
+#     """docstring"""
+#     connection = None
+#     try:
+#         connection = DBConnection(database="Intelligence_db").get_connection()
+#         cursor = connection.cursor(dictionary = True)
+#         if body.status != "ASSIGNED":
+#             raise HTTPException(status_code= 400, detail= "Invalid status")
+
+#         mission = mission_utiles.get_mission_if_exists_else_None(id, cursor)
+#         if not mission:
+#             raise HTTPException(status_code=404, detail= "The mission did not found")
+        
+
+#         return mission_db.update_mission_status(id, "COMPLETED")

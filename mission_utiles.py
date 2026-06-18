@@ -9,12 +9,8 @@ class MissionCreateBody(BaseModel):
     difficulty: int
     importance: int
 
-class MissionUpdateBody(BaseModel):
-    title: str | None = None
-    description: str | None = None
-    location: str | None = None
-    difficulty: int
-    importance: int
+class MissionUpdateStatusBody(BaseModel):
+    status: str | None
 
 
 class InvalidDifficultyOrImportance(Exception):
